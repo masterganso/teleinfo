@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Binary Calculator</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 600px;
+        margin: 0;
+        padding: 20px;
+    }
+    h1 {
+        margin-bottom: 1rem;
+        font-weight: 900;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    label {
+        display: block;
+        margin-top: 15px;
+        font-size: 1.1rem;
+    }
+    input, select {
+        font-size: 1rem;
+        padding: 8px;
+        margin-top: 5px;
+        border-radius: 5px;
+        border: none;
+        width: 250px;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    button {
+        margin-top: 20px;
+        background-color: #6c5ce7;
+        border: none;
+        padding: 12px 25px;
+        font-size: 1.2rem;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        font-weight: 700;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        transition: background-color 0.3s ease;
+    }
+    button:hover {
+        background-color: #4e3dcf;
+    }
+    #result {
+        margin-top: 25px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+    }
+    #error {
+        margin-top: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #ff7675;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+    }
+    @media (max-width: 400px) {
+        input, select {
+            width: 100%;
+        }
+    }
+</style>
+</head>
+<body>
+<h1>Binary Calculator</h1>
+
+<label for="operation">Operation:</label>
+<select id="operation" aria-label="Choose an operation">
+    <option value="+">+</option>
+    <option value="-">-</option>
+    <option value="*">*</option>
+    <option value="/">/</option>
+</select>
+
+<label for="operand1">First Binary Operand:</label>
+<input type="text" id="operand1" aria-label="First binary operand" placeholder="e.g. 1010" pattern="[01]+" title="Enter only 0s and 1s" required />
+
+<label for="operand2">Second Binary Operand:</label>
+<input type="text" id="operand2" aria-label="Second binary operand" placeholder="e.g. 110" pattern="[01]+" title="Enter only 0s and 1s" required />
+
+<button onclick="calculate()">Calculate</button>
+
+<div id="result" role="region" aria-live="polite"></div>
+<div id="error" role="alert"></div>
+
+<script>
+    function validateBinary(input) {
+        return /^[01]+$/.test(input);
+    }
+
+    async function calculate() {
+        const operation = document.getElementById('operation').value;
+        const operand1 = document.getElementById('operand1').value.trim();
+        const operand2 = document.getElementById('operand2').value.trim();
+        const resultEl = document.getElementById('result');
+        const errorEl = document.getElementById('error');
+
+        resultEl.textContent = '';
+        errorEl.textContent = '';
+
+        if (!validateBinary(operand1)) {
+            errorEl.textContent = "First operand must be a binary number (0s and 1s only).";
+            return;
+        }
+        if (!validateBinary(operand2)) {
+            errorEl.textContent = "Second operand must be a binary number (0s and 1s only).";
+            return;
+        }
+        try {
+            const response = await fetch('/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ operation, operand1, operand2 })
+            });
+
+            if (!response.ok) {
+                throw new Error("Server error");
+            }
+
+            const data = await response.json();
+            if(data.result === "Error" && data.error === "1" ) {
+                resultEl.textContent = "Warning: Bit error detected during transmission using parity bit!";
+            } else if (data.result === "Error") {
+                resultEl.textContent = "Erreur:division par zero detected";
+            } else{resultEl.textContent = `Result: ${data.result}`;}
+            
+        } catch (err) {
+            errorEl.textContent = "Failed to calculate. Please try again.";
+        }
+    }
+</script>
+</body>
+</html>
+
